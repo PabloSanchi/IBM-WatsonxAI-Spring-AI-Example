@@ -3,8 +3,8 @@ package com.watsonx.ai;
 
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.watsonx.WatsonxChatClient;
-import org.springframework.ai.watsonx.api.WatsonxAIOptions;
+import org.springframework.ai.watsonx.WatsonxAiChatClient;
+import org.springframework.ai.watsonx.WatsonxAiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -16,16 +16,16 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RestController
 public class WatsonxController {
 
-    private final WatsonxChatClient chat;
+    private final WatsonxAiChatClient chat;
 
     @Autowired
-    public WatsonxController(WatsonxChatClient chat) {
+    public WatsonxController(WatsonxAiChatClient chat) {
         this.chat = chat;
     }
 
     @GetMapping("/hi")
     public String sayHi() {
-        var options = WatsonxAIOptions.create().withRandomSeed(1).withModel("google/flan-ul2").withDecodingMethod("sample");
+        var options = WatsonxAiChatOptions.builder().withRandomSeed(1).withModel("google/flan-ul2").withDecodingMethod("sample").build();
         var prompt = new Prompt(new SystemMessage("say hi"), options);
         var results = this.chat.call(prompt);
         return results.getResult().getOutput().getContent();
@@ -33,7 +33,7 @@ public class WatsonxController {
 
     @GetMapping(path = "/hi/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public ResponseEntity<SseEmitter> sayHiStream() {
-        var options = WatsonxAIOptions.create().withRandomSeed(1).withModel("meta-llama/llama-2-70b-chat").withDecodingMethod("greedy").withMinNewTokens(100).withMaxNewTokens(200);
+        var options = WatsonxAiChatOptions.builder().withRandomSeed(1).withModel("google/flan-ul2").withDecodingMethod("sample").build();
         var prompt = new Prompt(new SystemMessage("say hi"), options);
         var results = this.chat.stream(prompt);
         SseEmitter emitter = new SseEmitter();
