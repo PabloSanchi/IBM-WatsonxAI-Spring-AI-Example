@@ -45,4 +45,4 @@ springdoc:
     path: /swagger.html
 ```
 5. **Run the APP**
-6. **Go to the Swagger UI**: test the endpoints (http://localhost:8080/swagger.html/)
+6. **Go to the Swagger UI**: test the endpoints (http://localhost:8080/swagger-ui/index.html)
