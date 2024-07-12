@@ -5,5 +5,18 @@ spring:
         base-url: ${WATSONX_BASE_URL}
         stream-endpoint: ${WATSONX_STREAM_ENDPOINT}
         text-endpoint: ${WATSONX_TEXT_ENDPOINT}
+        embedding-endpoint: ${WATSONX_EMBEDDING_ENDPOINT}
         project-id: ${WATSONX_PROJECT_ID}
         iam-token: ${WATSONX_IAM_TOKEN}
+
+        chat:
+          options:
+            model: ${WATSONX_CHAT_MODEL}
+
+        embedding:
+          options:
+            model: ${WATSONX_EMBEDDING_MODEL}
+
+springdoc:
+  swagger-ui:
+    path: /swagger.html
