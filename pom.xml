@@ -57,6 +57,14 @@
 			<version>2.5.0</version>
 		</dependency>
 
+		<!-- testing -->
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+		</dependency>
+
+
 	</dependencies>
 
 	<build>
