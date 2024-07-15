@@ -45,4 +45,10 @@ springdoc:
     path: /swagger.html
 ```
 5. **Run the APP**
-6. **Go to the Swagger UI**: test the endpoints (http://localhost:8080/swagger-ui/index.html)
+6. **Go to the Swagger UI**: test the endpoints http://localhost:8080/swagger-ui/index.html
+
+
+
+## Incoming updates to spring ai watsonxai integration:
+- Retry template instead of fixed retry policy
+- Add new watsonx ai options (HAP)
