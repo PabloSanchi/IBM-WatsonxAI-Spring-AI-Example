@@ -52,3 +52,4 @@ springdoc:
 ## Incoming updates to spring ai watsonxai integration:
 - Retry template instead of fixed retry policy
 - Add new watsonx ai options (HAP)
+- \[NOT FINAL\] Add Instana observability, see this [gh issue](https://github.com/spring-projects/spring-ai/issues/953) 
