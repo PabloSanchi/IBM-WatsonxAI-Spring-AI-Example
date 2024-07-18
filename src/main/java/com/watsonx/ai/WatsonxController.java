@@ -1,5 +1,7 @@
 package com.watsonx.ai;
 
+import com.watsonx.ai.dto.ChatAnswer;
+import com.watsonx.ai.dto.Question;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -13,7 +15,6 @@ import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.watsonx.WatsonxAiChatModel;
 import org.springframework.ai.watsonx.WatsonxAiEmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,17 +53,18 @@ public class WatsonxController {
         this.embedding = embedding;
     }
 
-    @GetMapping("/text")
+    @GetMapping(value = "/text", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Get chat response", description = "Get a response from the Watsonx AI chat model based on input text")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successful response", content = @Content(mediaType = "text/plain; charset=utf-8")),
+            @ApiResponse(responseCode = "200", description = "Successful response", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ChatAnswer.class))),
             @ApiResponse(responseCode = "400", description = "Bad request", content = @Content),
             @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
     })
-    public ResponseEntity<String> chat(@RequestParam String input) {
-        Prompt prompt = this.template.create(Map.of("input", input));
+    public ResponseEntity<ChatAnswer> chat(@RequestParam Question question) {
+        Prompt prompt = this.template.create(Map.of("input", question.question()));
         ChatResponse genAiResponse = this.chat.call(prompt);
-        return ResponseEntity.ok(genAiResponse.getResult().getOutput().getContent());
+        ChatAnswer chatAnswer = new ChatAnswer(genAiResponse.getResult().getOutput().getContent());
+        return ResponseEntity.ok(chatAnswer);
     }
 
     @GetMapping(path = "/text/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -72,8 +74,8 @@ public class WatsonxController {
             @ApiResponse(responseCode = "400", description = "Bad request", content = @Content),
             @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
     })
-    public ResponseEntity<SseEmitter> chatStream(@RequestParam String input) {
-        Prompt prompt = this.template.create(Map.of("input", input));
+    public ResponseEntity<SseEmitter> chatStream(@RequestParam Question question) {
+        Prompt prompt = this.template.create(Map.of("input", question.question()));
         Flux<ChatResponse> genAiStreaming = this.chat.stream(prompt);
 
         SseEmitter emitter = new SseEmitter();
@@ -81,7 +83,8 @@ public class WatsonxController {
         genAiStreaming.subscribe(
                 data -> {
                     try {
-                        emitter.send(data.getResult().getOutput().getContent(), MediaType.TEXT_PLAIN);
+                        ChatAnswer chatAnswer = new ChatAnswer(data.getResult().getOutput().getContent());
+                        emitter.send(chatAnswer, MediaType.APPLICATION_JSON);
                     } catch (Exception e) {
                         emitter.completeWithError(e);
                     }
