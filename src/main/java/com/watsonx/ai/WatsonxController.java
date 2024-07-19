@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -21,7 +23,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
@@ -31,7 +32,7 @@ import java.util.Map;
 @RequestMapping("/api/v1")
 public class WatsonxController {
 
-    private final WatsonxAiChatModel chat;
+    private final ChatModel chat;
     private final WatsonxAiEmbeddingModel embedding;
 
     private final String stringTemplate = """
@@ -67,33 +68,17 @@ public class WatsonxController {
         return ResponseEntity.ok(chatAnswer);
     }
 
-    @GetMapping(path = "/text/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @GetMapping(path = "/text/stream", produces = MediaType.APPLICATION_NDJSON_VALUE)
     @Operation(summary = "Stream chat response", description = "Stream a response from the Watsonx AI chat model based on input text")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successful response", content = @Content(mediaType = "text/event-stream")),
+            @ApiResponse(responseCode = "200", description = "Successful response", content = @Content(mediaType = MediaType.APPLICATION_NDJSON_VALUE, schema = @Schema(implementation = ChatAnswer.class))),
             @ApiResponse(responseCode = "400", description = "Bad request", content = @Content),
             @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
     })
-    public ResponseEntity<SseEmitter> chatStream(@RequestParam Question question) {
+    public ResponseEntity<Flux<ChatAnswer>> chatStream(@RequestParam Question question) {
         Prompt prompt = this.template.create(Map.of("input", question.question()));
-        Flux<ChatResponse> genAiStreaming = this.chat.stream(prompt);
-
-        SseEmitter emitter = new SseEmitter();
-
-        genAiStreaming.subscribe(
-                data -> {
-                    try {
-                        ChatAnswer chatAnswer = new ChatAnswer(data.getResult().getOutput().getContent());
-                        emitter.send(chatAnswer, MediaType.APPLICATION_JSON);
-                    } catch (Exception e) {
-                        emitter.completeWithError(e);
-                    }
-                },
-                emitter::completeWithError,
-                emitter::complete
-        );
-
-        return ResponseEntity.ok(emitter);
+        Flux<ChatAnswer> genAiStreaming = this.chat.stream(prompt).map(chunk -> new ChatAnswer(chunk.getResult().getOutput().getContent()));
+        return ResponseEntity.ok(genAiStreaming);
     }
 
     @GetMapping("/embedding")
