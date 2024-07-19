@@ -43,7 +43,7 @@ public class WatsonxController {
         {input}
         <|assistant|>
         
-        """.stripIndent();
+        """;
 
     private final PromptTemplate template = new PromptTemplate(stringTemplate);
 
