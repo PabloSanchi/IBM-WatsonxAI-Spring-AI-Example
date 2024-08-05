@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.watsonx.ai.dto.ChatAnswer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -24,6 +25,7 @@ import org.springframework.ai.watsonx.WatsonxAiEmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.http.MediaType;
@@ -32,76 +34,75 @@ import reactor.core.publisher.Flux;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @WebMvcTest(WatsonxController.class)
+@ActiveProfiles("dev")
 public class WatsonxControllerTest {
-    @Autowired
-    private MockMvc mockMvc;
 
-    @MockBean
-    private WatsonxAiChatModel chat;
+	@Autowired
+	private MockMvc mockMvc;
 
-    @MockBean
-    private WatsonxAiEmbeddingModel embedding;
+	@MockBean
+	private WatsonxAiChatModel chat;
 
-    @InjectMocks
-    private WatsonxController watsonxController;
+	@MockBean
+	private WatsonxAiEmbeddingModel embedding;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+	@InjectMocks
+	private WatsonxController watsonxController;
 
-    @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
+	private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Test
-    public void testChat() throws Exception {
-        String input = "Hello, how are you?";
-        String expectedResponse = "I'm fine, thank you!";
-        ChatResponse mockResponse = new ChatResponse(List.of(new Generation(expectedResponse)));
+	@BeforeEach
+	public void setUp() {
+		MockitoAnnotations.openMocks(this);
+	}
 
-        when(chat.call(any(Prompt.class))).thenReturn(mockResponse);
+	@Test
+	public void testChat() throws Exception {
+		String input = "Hello, how are you?";
+		String expectedResponse = "I'm fine, thank you!";
+		ChatResponse mockResponse = new ChatResponse(List.of(new Generation(expectedResponse)));
 
-        mockMvc.perform(get("/api/v1/text")
-                        .param("input", input)
-                        .accept(MediaType.TEXT_PLAIN))
-                        .andExpect(status().isOk())
-                        .andExpect(content().string(expectedResponse));
-    }
+		when(chat.call(any(Prompt.class))).thenReturn(mockResponse);
 
-    @Test
-    public void testChatStream() throws Exception {
-        String input = "Stream test";
-        String expectedResponse = "Streaming response!";
-        ChatResponse mockResponse = new ChatResponse(List.of(new Generation(expectedResponse)));
+		mockMvc.perform(get("/api/v1/text").param("question", input).accept(MediaType.APPLICATION_JSON))
+			.andExpect(status().isOk())
+			.andExpect(content().json(objectMapper.writeValueAsString(new ChatAnswer(expectedResponse))));
+	}
 
-        when(chat.stream(any(Prompt.class))).thenReturn(Flux.just(mockResponse));
+	@Test
+	public void testChatStream() throws Exception {
+		String input = "Stream test";
+		String outputText = "Streaming response!";
+		ChatAnswer expectedResponse = ChatAnswer.of(outputText);
+		ChatResponse mockResponse = new ChatResponse(List.of(new Generation(outputText)));
 
-        MvcResult result = mockMvc.perform(get("/api/v1/text/stream")
-                        .param("input", input)
-                        .accept(MediaType.TEXT_EVENT_STREAM))
-                        .andExpect(status().isOk())
-                        .andReturn();
+		when(chat.stream(any(Prompt.class))).thenReturn(Flux.just(mockResponse));
 
-        String stringResponse = result.getResponse().getContentAsString();
-        assertThat(stringResponse.strip()).isEqualTo("data:" + expectedResponse);
-    }
+		MvcResult result = mockMvc
+			.perform(get("/api/v1/text/stream").param("question", input).accept(MediaType.APPLICATION_NDJSON))
+			.andExpect(status().isOk())
+			.andReturn();
 
-    @Test
-    public void testEmbedding() throws Exception {
-        String text = "This is a test text";
-        Embedding mockEmbedding = new Embedding(List.of(0.1, 0.2, 0.3), 0);
-        EmbeddingResponse mockResponse = new EmbeddingResponse(List.of(mockEmbedding));
+		ChatAnswer response = objectMapper.readValue(result.getResponse().getContentAsString(), ChatAnswer.class);
+		assertThat(response.answer()).isEqualTo(expectedResponse.answer());
+	}
 
-        when(embedding.embedForResponse(any(List.class))).thenReturn(mockResponse);
+	@Test
+	public void testEmbedding() throws Exception {
+		String text = "This is a test text";
+		Embedding mockEmbedding = new Embedding(List.of(0.1, 0.2, 0.3), 0);
+		EmbeddingResponse mockResponse = new EmbeddingResponse(List.of(mockEmbedding));
 
-        MvcResult result = mockMvc.perform(get("/api/v1/embedding")
-                        .param("text", text)
-                        .accept(MediaType.APPLICATION_JSON))
-                        .andExpect(status().isOk())
-                        .andReturn();
+		when(embedding.embedForResponse(any(List.class))).thenReturn(mockResponse);
 
-        String content = result.getResponse().getContentAsString();
-        Map<String, Object> responseEmbedding = objectMapper.readValue(content, Map.class);
-        assertThat(responseEmbedding.get("output")).isEqualTo(mockEmbedding.getOutput());
-    }
+		MvcResult result = mockMvc
+			.perform(get("/api/v1/embedding").param("text", text).accept(MediaType.APPLICATION_JSON))
+			.andExpect(status().isOk())
+			.andReturn();
+
+		String content = result.getResponse().getContentAsString();
+		Map<String, Object> responseEmbedding = objectMapper.readValue(content, Map.class);
+		assertThat(responseEmbedding.get("output")).isEqualTo(mockEmbedding.getOutput());
+	}
 
 }
