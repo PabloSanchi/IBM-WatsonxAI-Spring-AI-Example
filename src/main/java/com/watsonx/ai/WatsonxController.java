@@ -31,64 +31,70 @@ import java.util.Map;
 @RequestMapping("/api/v1")
 public class WatsonxController {
 
-    private final ChatModel chat;
-    private final WatsonxAiEmbeddingModel embedding;
+	private final ChatModel chat;
 
-    private final String stringTemplate = """
-        <|system|>
-        You are Granite Chat, an AI language model developed by IBM.
-        You are a cautious assistant. You carefully follow instructions.
-        You are helpful and harmless and you follow ethical guidelines and promote positive behavior.
-        <|user|>
-        {input}
-        <|assistant|>
-        
-        """;
+	private final WatsonxAiEmbeddingModel embedding;
 
-    private final PromptTemplate template = new PromptTemplate(stringTemplate);
+	private final String stringTemplate = """
+			<|system|>
+			You are Granite Chat, an AI language model developed by IBM.
+			You are a cautious assistant. You carefully follow instructions.
+			You are helpful and harmless and you follow ethical guidelines and promote positive behavior.
+			{input}
+			""";
 
-    @Autowired
-    public WatsonxController(WatsonxAiChatModel chat, WatsonxAiEmbeddingModel embedding) {
-        this.chat = chat;
-        this.embedding = embedding;
-    }
+	private final PromptTemplate template = new PromptTemplate(stringTemplate);
 
-    @GetMapping(value = "/text", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Get chat response", description = "Get a response from the Watsonx AI chat model based on input text")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successful response", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ChatAnswer.class))),
-            @ApiResponse(responseCode = "400", description = "Bad request", content = @Content),
-            @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
-    })
-    public ResponseEntity<ChatAnswer> chat(@RequestParam Question question) {
-        Prompt prompt = this.template.create(Map.of("input", question.question()));
-        ChatResponse genAiResponse = this.chat.call(prompt);
-        ChatAnswer chatAnswer = new ChatAnswer(genAiResponse.getResult().getOutput().getContent());
-        return ResponseEntity.ok(chatAnswer);
-    }
+	@Autowired
+	public WatsonxController(WatsonxAiChatModel chat, WatsonxAiEmbeddingModel embedding) {
+		this.chat = chat;
+		this.embedding = embedding;
+	}
 
-    @GetMapping(path = "/text/stream", produces = MediaType.APPLICATION_NDJSON_VALUE)
-    @Operation(summary = "Stream chat response", description = "Stream a response from the Watsonx AI chat model based on input text")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successful response", content = @Content(mediaType = MediaType.APPLICATION_NDJSON_VALUE, schema = @Schema(implementation = ChatAnswer.class))),
-            @ApiResponse(responseCode = "400", description = "Bad request", content = @Content),
-            @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
-    })
-    public ResponseEntity<Flux<ChatAnswer>> chatStream(@RequestParam Question question) {
-        Prompt prompt = this.template.create(Map.of("input", question.question()));
-        Flux<ChatAnswer> genAiStreaming = this.chat.stream(prompt).map(chunk -> new ChatAnswer(chunk.getResult().getOutput().getContent()));
-        return ResponseEntity.ok(genAiStreaming);
-    }
+	@GetMapping(value = "/text", produces = MediaType.APPLICATION_JSON_VALUE)
+	@Operation(summary = "Get chat response",
+			description = "Get a response from the Watsonx AI chat model based on input text")
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "Successful response",
+					content = @Content(mediaType = "application/json",
+							schema = @Schema(implementation = ChatAnswer.class))),
+			@ApiResponse(responseCode = "400", description = "Bad request", content = @Content),
+			@ApiResponse(responseCode = "500", description = "Internal server error", content = @Content) })
+	public ResponseEntity<ChatAnswer> chat(@RequestParam Question question) {
+		Prompt prompt = this.template.create(Map.of("input", question.question()));
+		ChatResponse genAiResponse = this.chat.call(prompt);
+		ChatAnswer chatAnswer = new ChatAnswer(genAiResponse.getResult().getOutput().getContent());
+		return ResponseEntity.ok(chatAnswer);
+	}
 
-    @GetMapping("/embedding")
-    @Operation(summary = "Get text embedding", description = "Get the embedding of the input text using the Watsonx AI embedding model")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successful response", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Embedding.class))),
-            @ApiResponse(responseCode = "400", description = "Bad request", content = @Content),
-            @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
-    })
-    public ResponseEntity<Embedding> embedding(@RequestParam String text) {
-        EmbeddingResponse response = this.embedding.embedForResponse(List.of(text));
-        return ResponseEntity.ok(response.getResult());
-    }
+	@GetMapping(path = "/text/stream", produces = MediaType.APPLICATION_NDJSON_VALUE)
+	@Operation(summary = "Stream chat response",
+			description = "Stream a response from the Watsonx AI chat model based on input text")
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "Successful response",
+					content = @Content(mediaType = MediaType.APPLICATION_NDJSON_VALUE,
+							schema = @Schema(implementation = ChatAnswer.class))),
+			@ApiResponse(responseCode = "400", description = "Bad request", content = @Content),
+			@ApiResponse(responseCode = "500", description = "Internal server error", content = @Content) })
+	public ResponseEntity<Flux<ChatAnswer>> chatStream(@RequestParam Question question) {
+		Prompt prompt = this.template.create(Map.of("input", question.question()));
+		Flux<ChatAnswer> genAiStreaming = this.chat.stream(prompt)
+			.map(chunk -> new ChatAnswer(chunk.getResult().getOutput().getContent()));
+		return ResponseEntity.ok(genAiStreaming);
+	}
+
+	@GetMapping("/embedding")
+	@Operation(summary = "Get text embedding",
+			description = "Get the embedding of the input text using the Watsonx AI embedding model")
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "Successful response",
+					content = @Content(mediaType = "application/json",
+							schema = @Schema(implementation = Embedding.class))),
+			@ApiResponse(responseCode = "400", description = "Bad request", content = @Content),
+			@ApiResponse(responseCode = "500", description = "Internal server error", content = @Content) })
+	public ResponseEntity<Embedding> embedding(@RequestParam String text) {
+		EmbeddingResponse response = this.embedding.embedForResponse(List.of(text));
+		return ResponseEntity.ok(response.getResult());
+	}
+
 }
