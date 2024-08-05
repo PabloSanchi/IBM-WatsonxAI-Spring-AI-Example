@@ -8,6 +8,9 @@ This project demonstrates how to integrate IBM's Watsonx AI models into a Spring
 - **Streaming Chat API**: Stream responses from the Watsonx AI chat model in real-time.
 - **Embedding API**: Get text embeddings using the Watsonx AI embedding model.
 
+## Notes
+- Embedding models: [CLICK HERE](https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models-embed.html?context=wx&audience=wdp)
+- Chat models: [CLICK HERE](https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-api-model-ids.html?context=wx&audience=wdp)
 
 ## Getting Started
 1. **Clone the Repository**
@@ -47,7 +50,17 @@ springdoc:
 5. **Run the APP**
 6. **Go to the Swagger UI**: test the endpoints http://localhost:8080/swagger-ui/index.html
 
+## Build
 
+To build the project, run the following command:
+```sh
+./mvnw clean install
+```
+
+To run the project linter and formatter, run the following command:
+```sh
+./mvnw spring-javaformat:apply 
+```
 
 ## Incoming updates to spring ai watsonxai integration:
 - Retry template instead of fixed retry policy
