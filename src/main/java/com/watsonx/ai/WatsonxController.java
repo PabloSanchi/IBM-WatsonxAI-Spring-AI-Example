@@ -63,7 +63,7 @@ public class WatsonxController {
 	public ResponseEntity<ChatAnswer> chat(@RequestParam Question question) {
 		Prompt prompt = this.template.create(Map.of("input", question.question()));
 		ChatResponse genAiResponse = this.chat.call(prompt);
-		ChatAnswer chatAnswer = new ChatAnswer(genAiResponse.getResult().getOutput().getContent());
+		ChatAnswer chatAnswer = ChatAnswer.of(genAiResponse.getResult().getOutput().getContent());
 		return ResponseEntity.ok(chatAnswer);
 	}
 
@@ -79,7 +79,7 @@ public class WatsonxController {
 	public ResponseEntity<Flux<ChatAnswer>> chatStream(@RequestParam Question question) {
 		Prompt prompt = this.template.create(Map.of("input", question.question()));
 		Flux<ChatAnswer> genAiStreaming = this.chat.stream(prompt)
-			.map(chunk -> new ChatAnswer(chunk.getResult().getOutput().getContent()));
+			.map(chunk -> ChatAnswer.of(chunk.getResult().getOutput().getContent()));
 		return ResponseEntity.ok(genAiStreaming);
 	}
 
