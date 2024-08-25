@@ -90,7 +90,7 @@ public class WatsonxControllerTest {
 	@Test
 	public void testEmbedding() throws Exception {
 		String text = "This is a test text";
-		Embedding mockEmbedding = new Embedding(List.of(0.1, 0.2, 0.3), 0);
+		Embedding mockEmbedding = new Embedding(new float[] { 0.1f, 0.2f, 0.3f }, 0);
 		EmbeddingResponse mockResponse = new EmbeddingResponse(List.of(mockEmbedding));
 
 		when(embedding.embedForResponse(any(List.class))).thenReturn(mockResponse);
@@ -102,7 +102,12 @@ public class WatsonxControllerTest {
 
 		String content = result.getResponse().getContentAsString();
 		Map<String, Object> responseEmbedding = objectMapper.readValue(content, Map.class);
-		assertThat(responseEmbedding.get("output")).isEqualTo(mockEmbedding.getOutput());
+		assertThat(responseEmbedding).containsKey("output");
+
+		List<Double> output = (List<Double>) responseEmbedding.get("output");
+		List<Double> expected = List.of(0.1, 0.2, 0.3);
+
+		assertThat(output).containsExactlyElementsOf(expected);
 	}
 
 }
